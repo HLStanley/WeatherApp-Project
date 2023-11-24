@@ -1,26 +1,39 @@
 import requests
 import PySimpleGUI as sg
 
-#This project uses OpenWeatherAPI Key
-
 API_KEY = 'b75ddaaeed0cac26e7405723281dc1ec' #My API Key
+sg.theme('DarkBlue1') #Theme for GUI
 
-#Theme for PySimpleGUI
-sg.ChangeLookAndFeel('Reddit')
-BG_COLOR = "#FFCC66" #sg.theme_text_color()
-TXT_COLOR = "#000000" #sg.theme_background_color()
-ALPHA = 0.8
+layout = [
+ [sg.Text('Current Weather')],
+ [sg.Text('Input your city'), sg.InputText(key='-CITY-'), sg.Button('Enter')], #Asks user to input city
+ [sg.Text('Temp:'), sg.Text(key='-WEATHER-'), sg.Text('Kelvin')], #Prints Temp
+ [sg.Text('Condition:'),sg.Text(key='-DESCRIPTION-')] #Prints description of weather
+ ]
 
-CITY = input("Enter city you want weather for: ") #Asks for City
-URL = f'http://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={API_KEY}'
-response = requests.get(URL) #GET Request
+window = sg.Window('Weather App', layout)
 
-if response.status_code == 200: #Checks if  GET Request is OK
-    data = response.json() #Stores data from GET Request
-    temp = data['main']['temp'] #Stores Tempeture from GET Request
-    desc = data['weather'][0]['description'] #Stores description of weather from GET Request
-    print(f'Temperature: {(temp - 273.15) * 1.8 + 32} F') #I have to convert to F using this formula F = (K − 273.15) × 1.8 + 32
-    print(f'Description: {desc}') #Prints the description of the Weather
-else:
-    print('Error fetching weather data') #If city is not typed properly thows error or if request dosent suceed
-    
+# Create a session object
+session = requests.Session()
+
+headers = {'Accept-Encoding': 'gzip'}
+
+while True:
+ event, values = window.read()
+ if event == sg.WIN_CLOSED: # Closes if user closes window
+     break
+ 
+ if event == 'Enter':
+     city = values['-CITY-'] #Asocciates Input to Get Request
+     URL = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}'
+     response = session.get(URL, headers=headers)
+     if response.status_code == 200: #If response code is 200 aka OK then the city is valid
+         request = response.json()
+         temp = request['main']['temp'] #Sets weather in Kelvin
+         desc = request['weather'][0]['description'] #Sets Weather Description
+         window['-WEATHER-'].update(temp) #Updates GUI Temp
+         window['-DESCRIPTION-'].update(desc) #Updates GUI Weather Description
+     else:
+         sg.popup('Invalid city name. Please enter a valid city.')
+
+window.close()
